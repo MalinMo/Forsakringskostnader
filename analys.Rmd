@@ -1,0 +1,92 @@
+---
+title: "Försäkringskostnader"
+author: "Malin"
+date: "2026-04-01"
+output: html_document
+---
+
+# Försäkringsanalys
+
+Försäkringsbranschen bygger på förmågan att korrekt bedöma och prissätta risk. För att säkerställa att prissättningen återspeglar de faktiska kostnadsdrivarna har en analys genomförts av bolagets historiska kunddata, med fokus på demografiska egenskaper, livsstilsfaktorer och hälsorelaterade variabler.
+
+Rapporten presenterar en explorativ dataanalys följt av en regressionsanalys i syfte att identifiera vilka variabler som har starkast samband med försäkringskostnaderna. Resultaten är avsedda att utgöra ett underlag för ledningsgruppens arbete med framtida prissättningsstrategier.
+
+## 1. Dataförståelse
+
+```{r setup, include=FALSE}
+options(width = 200)
+knitr::opts_chunk$set(echo = TRUE)
+Sys.setlocale("LC_ALL", "Swedish")
+```
+
+```{r}
+library(tidyverse)
+library(skimr)
+library(patchwork)
+
+cost_raw <- read.csv("insurance_costs.csv")
+
+tibble(
+  variabel = names(cost_raw),
+  datatyp = sapply(cost_raw, class)
+) |> knitr::kable()
+
+skimr::skim(cost_raw)
+
+cost_raw |> count(sex) |> knitr::kable()
+cost_raw |> count(smoker) |> knitr::kable()
+
+
+```
+
+## 2. Datastädning och förberedelser
+
+```{r}
+cost_clean <- cost_raw %>% 
+  mutate(
+    sex = str_to_lower(str_trim(sex)),
+    region = str_to_lower(str_trim(region)),
+    smoker = str_to_lower(str_trim(smoker)),
+    chronic_condition = str_to_lower(str_trim(chronic_condition)),
+    exercise_level = str_to_lower(str_trim(exercise_level)),
+    exercise_level = na_if(exercise_level, ""),
+    plan_type = str_to_lower(str_trim(plan_type)),
+    sex = as.factor(sex),
+    region = as.factor(region),
+    smoker = as.factor(smoker),
+    chronic_condition = as.factor(chronic_condition),
+    exercise_level = factor(exercise_level, levels = c("low", "medium", "high"), ordered = TRUE),
+    plan_type = factor(plan_type, levels = c("basic", "standard", "premium"), ordered = TRUE),
+    annual_checkups = as.integer(annual_checkups)
+  )
+
+tibble(
+  variabel = names(cost_clean),
+  datatyp = sapply(cost_clean, class)
+) |> knitr::kable()
+
+cost_clean <- cost_clean %>%
+  drop_na(bmi, annual_checkups)
+
+skimr::skim(cost_clean)
+
+cost_clean |> count(sex) |> knitr::kable()
+cost_clean |> count(smoker) |> knitr::kable()
+cost_clean |> count(exercise_level) |> knitr::kable()
+
+p1 <- ggplot(cost_clean, aes(x = sex)) +
+  geom_bar(fill = "blue") +
+  labs(title = "Kön", x = "Kön", y = "Antal")
+
+p2 <- ggplot(cost_clean, aes(x = smoker)) +
+  geom_bar(fill = "darkgreen") +
+  labs(title = "Rökare", x = "Rökare", y = "Antal")
+
+p3 <- ggplot(cost_clean, aes(x = exercise_level)) +
+  geom_bar(fill = "orange") +
+  labs(title = "Träningsnivå", x = "Träningsnivå", y = "Antal")
+
+p1 + p2 + p3
+
+```
+

@@ -1,2 +1,17 @@
 # Forsakringskostnader
 Individuell inlämningsuppgift
+
+## Körinstruktion
+**Öppna projektet**
+Öppna filen försäkringsanalys.Rmd i RStudio.
+
+**Paket som används**
+Installera paketen om du inte redan har dem:
+```r
+install.packages("tidyverse")
+install.packages("skimr")
+install:pacakges("patchwork")
+```
+
+**Kör analysen**
+Klicka på Knit i RStudio för att rendera dokumentet. En HTML-fil skapas automatiskt i samma mapp.

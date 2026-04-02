@@ -41,6 +41,14 @@ cost_raw |> count(smoker) |> knitr::kable()
 
 ```
 
+### Samanfattning dataförståelse
+
+Datasetet består av 1100 kunder med 14 variabler som beskriver demografiska egenskaper, livsstilsfaktorer och försäkringskostnader. Medelåldern är 42.5 år och medelkostnaden uppgår till cirka 10 060 kr med en stor spridning, vilket indikerar att kostnaderna inte är normalfördelade.
+
+Två variabler har saknade värden, bmi (28 observationer) och annual_checkups (20 observationer). Variabeln exercise_level har dessutom 22 tomma strängar.
+
+Majoriteten av kunderna är icke-rökare, och könsfördelningen är relativt jämn. Variablerna prior_accidents och prior_claims har medelvärden nära noll, vilket tyder på att skador och skadeanmälningar är ovanliga i kundstocken. Inkonsekvent kapitalisering förekommer och behöver hanteras.
+
 ## 2. Datastädning och förberedelser
 
 ### Datastädning

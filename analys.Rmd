@@ -34,7 +34,6 @@ tibble(
   datatyp = sapply(cost_raw, class)
 ) |> knitr::kable()
 
-# skimr::skim(cost_raw)
 skim_without_charts(cost_raw)
 
 cost_raw |> count(sex) |> knitr::kable()
@@ -69,6 +68,24 @@ cost_clean <- cost_raw %>%
 
 ```
 
+### BMI-kategorier
+
+```{r}
+cost_clean <- cost_clean %>%
+  mutate(
+    bmi_category = case_when(
+      bmi < 18.5 ~ "undervikt",
+      bmi < 25   ~ "normalvikt",
+      bmi < 30   ~ "övervikt",
+      bmi >= 30  ~ "fetma",
+      TRUE       ~ NA_character_
+    ),
+    bmi_category = factor(bmi_category, levels = c("undervikt", "normalvikt", "övervikt", "fetma"), ordered = TRUE)
+  )
+
+```
+
+
 ### Kontrol av datatyper
 
 ```{r}
@@ -78,10 +95,15 @@ tibble(
   datatyp = sapply(cost_clean, class)
 ) |> knitr::kable()
 
-# skimr::skim(cost_clean)
 skim_without_charts(cost_clean)
 
 ```
+
+### Sammanfattning
+
+I datastädningen har inkonsekvent kapitalisering och eventuella blanksteg hanterats. Textvariabler har gjorts om till faktorer för att underlätta användningen i regressionsanalysen. Variablerna exercies_level och plan_type har dessutom gjort om till ordnade faktorer. annual_checkups har gjorts om från decimaltal till heltal. Variabeln customer_id har tagits bort då den inte kommer användas i analysen. En ny variabel för BMI-kategorier har skapats baserad på WHOs definitioner.
+
+## Beskrivande analys
 
 ### Tabeller över fördelning
 
@@ -93,7 +115,7 @@ cost_clean |> count(exercise_level) |> knitr::kable()
 
 ```
 
-### Visulaiseringar
+### Visualiseringar
 
 ```{r, fig.width=12, fig.height=4}
 
@@ -112,3 +134,22 @@ p3 <- ggplot(cost_clean, aes(x = exercise_level)) +
 p1 + p2 + p3
 
 ```
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+

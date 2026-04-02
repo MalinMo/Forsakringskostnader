@@ -457,8 +457,7 @@ tibble(
 </tr>
 </tbody>
 </table>
-<pre class="r"><code># skimr::skim(cost_raw)
-skim_without_charts(cost_raw)</code></pre>
+<pre class="r"><code>skim_without_charts(cost_raw)</code></pre>
 <table>
 <caption>Data summary</caption>
 <tbody>
@@ -782,6 +781,20 @@ skim_without_charts(cost_raw)</code></pre>
   ) %&gt;% 
   select(-customer_id)</code></pre>
 </div>
+<div id="bmi-kategorier" class="section level3">
+<h3>BMI-kategorier</h3>
+<pre class="r"><code>cost_clean &lt;- cost_clean %&gt;%
+  mutate(
+    bmi_category = case_when(
+      bmi &lt; 18.5 ~ &quot;undervikt&quot;,
+      bmi &lt; 25   ~ &quot;normalvikt&quot;,
+      bmi &lt; 30   ~ &quot;övervikt&quot;,
+      bmi &gt;= 30  ~ &quot;fetma&quot;,
+      TRUE       ~ NA_character_
+    ),
+    bmi_category = factor(bmi_category, levels = c(&quot;undervikt&quot;, &quot;normalvikt&quot;, &quot;övervikt&quot;, &quot;fetma&quot;), ordered = TRUE)
+  )</code></pre>
+</div>
 <div id="kontrol-av-datatyper" class="section level3">
 <h3>Kontrol av datatyper</h3>
 <pre class="r"><code>tibble(
@@ -848,10 +861,13 @@ skim_without_charts(cost_raw)</code></pre>
 <td align="left">charges</td>
 <td align="left">numeric</td>
 </tr>
+<tr class="even">
+<td align="left">bmi_category</td>
+<td align="left">ordered, factor</td>
+</tr>
 </tbody>
 </table>
-<pre class="r"><code># skimr::skim(cost_clean)
-skim_without_charts(cost_clean)</code></pre>
+<pre class="r"><code>skim_without_charts(cost_clean)</code></pre>
 <table>
 <caption>Data summary</caption>
 <tbody>
@@ -865,7 +881,7 @@ skim_without_charts(cost_clean)</code></pre>
 </tr>
 <tr class="odd">
 <td align="left">Number of columns</td>
-<td align="left">13</td>
+<td align="left">14</td>
 </tr>
 <tr class="even">
 <td align="left">_______________________</td>
@@ -877,7 +893,7 @@ skim_without_charts(cost_clean)</code></pre>
 </tr>
 <tr class="even">
 <td align="left">factor</td>
-<td align="left">6</td>
+<td align="left">7</td>
 </tr>
 <tr class="odd">
 <td align="left">numeric</td>
@@ -961,6 +977,14 @@ skim_without_charts(cost_clean)</code></pre>
 <td align="left">TRUE</td>
 <td align="right">3</td>
 <td align="left">sta: 553, bas: 339, pre: 208</td>
+</tr>
+<tr class="odd">
+<td align="left">bmi_category</td>
+<td align="right">28</td>
+<td align="right">0.97</td>
+<td align="left">TRUE</td>
+<td align="right">4</td>
+<td align="left">öve: 450, fet: 305, nor: 285, und: 32</td>
 </tr>
 </tbody>
 </table>
@@ -1080,6 +1104,18 @@ skim_without_charts(cost_clean)</code></pre>
 </tbody>
 </table>
 </div>
+<div id="sammanfattning" class="section level3">
+<h3>Sammanfattning</h3>
+<p>I datastädningen har inkonsekvent kapitalisering och ev. white space
+hanterats. Char-variabler har gjorts om till datatyp factor för att
+underlätta användning i regressionsanalys. Exercies_level och plan_type
+har dessutom gjort om till ordered factors. Annual_checkup har gjorts om
+från double till integer. Variabeln customer_id har tagits bort då den
+inte kommer användas i analysen.</p>
+</div>
+</div>
+<div id="beskrivande-analys" class="section level2">
+<h2>Beskrivande analys</h2>
 <div id="tabeller-över-fördelning" class="section level3">
 <h3>Tabeller över fördelning</h3>
 <pre class="r"><code>cost_clean |&gt; count(sex) |&gt; knitr::kable()</code></pre>
@@ -1148,8 +1184,8 @@ skim_without_charts(cost_clean)</code></pre>
 </tbody>
 </table>
 </div>
-<div id="visulaiseringar" class="section level3">
-<h3>Visulaiseringar</h3>
+<div id="visualiseringar" class="section level3">
+<h3>Visualiseringar</h3>
 <pre class="r"><code>p1 &lt;- ggplot(cost_clean, aes(x = sex)) +
   geom_bar(fill = &quot;blue&quot;) +
   labs(title = &quot;Kön&quot;, x = &quot;Kön&quot;, y = &quot;Antal&quot;)

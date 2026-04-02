@@ -113,7 +113,7 @@ I datastädningen har inkonsekvent kapitalisering och eventuella blanksteg hante
 
 ## Beskrivande analys
 
-### Tabeller över fördelning
+### Tabeller över fördelning av kategoriska variabler
 
 ```{r}
 
@@ -123,7 +123,7 @@ cost_clean |> count(exercise_level) |> knitr::kable()
 
 ```
 
-### Visualiseringar
+### Visualisering av fördelning av kategoriska variabler
 
 ```{r, fig.width=12, fig.height=4}
 
@@ -200,14 +200,32 @@ page + pbmi
 
 ```
 
+### Skillnader mellan grupper
 
-```{r}
+```{r, fig.width=12, fig.height=4}
+
+psex <- ggplot(cost_clean, aes(y = charges, x = sex, fill = sex)) +
+  geom_boxplot() +
+  labs(title = "Kostnader vs kön")
+
+preg <- ggplot(cost_clean, aes(y = charges, x = region, fill = region)) +
+  geom_boxplot() +
+  labs(title = "Kostnader vs region")
+
+ppla <- ggplot(cost_clean, aes(y = charges, x = plan_type, fill = plan_type)) +
+  geom_boxplot() +
+  labs(title = "Kostnader vs försäkringsplan")
+
+psex + preg + ppla
 
 ```
 
 
 
 
+```{r}
+
+```
 
 
 

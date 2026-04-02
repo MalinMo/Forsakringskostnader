@@ -14,12 +14,15 @@ Rapporten presenterar en explorativ dataanalys följt av en regressionsanalys i 
 ## 1. Dataförståelse
 
 ```{r setup, include=FALSE}
+
 options(width = 200)
 knitr::opts_chunk$set(echo = TRUE)
 Sys.setlocale("LC_ALL", "Swedish")
+
 ```
 
 ```{r}
+
 library(tidyverse)
 library(skimr)
 library(patchwork)
@@ -31,17 +34,20 @@ tibble(
   datatyp = sapply(cost_raw, class)
 ) |> knitr::kable()
 
-skimr::skim(cost_raw)
+# skimr::skim(cost_raw)
+skim_without_charts(cost_raw)
 
 cost_raw |> count(sex) |> knitr::kable()
 cost_raw |> count(smoker) |> knitr::kable()
-
 
 ```
 
 ## 2. Datastädning och förberedelser
 
+### Datastädning
+
 ```{r}
+
 cost_clean <- cost_raw %>% 
   mutate(
     sex = str_to_lower(str_trim(sex)),
@@ -58,21 +64,38 @@ cost_clean <- cost_raw %>%
     exercise_level = factor(exercise_level, levels = c("low", "medium", "high"), ordered = TRUE),
     plan_type = factor(plan_type, levels = c("basic", "standard", "premium"), ordered = TRUE),
     annual_checkups = as.integer(annual_checkups)
-  )
+  ) %>% 
+  select(-customer_id)
+
+```
+
+### Kontrol av datatyper
+
+```{r}
 
 tibble(
   variabel = names(cost_clean),
   datatyp = sapply(cost_clean, class)
 ) |> knitr::kable()
 
-cost_clean <- cost_clean %>%
-  drop_na(bmi, annual_checkups)
+# skimr::skim(cost_clean)
+skim_without_charts(cost_clean)
 
-skimr::skim(cost_clean)
+```
+
+### Tabeller över fördelning
+
+```{r}
 
 cost_clean |> count(sex) |> knitr::kable()
 cost_clean |> count(smoker) |> knitr::kable()
 cost_clean |> count(exercise_level) |> knitr::kable()
+
+```
+
+### Visulaiseringar
+
+```{r, fig.width=12, fig.height=4}
 
 p1 <- ggplot(cost_clean, aes(x = sex)) +
   geom_bar(fill = "blue") +
@@ -89,4 +112,3 @@ p3 <- ggplot(cost_clean, aes(x = exercise_level)) +
 p1 + p2 + p3
 
 ```
-

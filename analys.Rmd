@@ -162,13 +162,48 @@ pc1 + pc2
 
 ```
 
+### Kostnader vs rökning och träning
+
+```{r, fig.width=12, fig.height=4}
+
+psmo <- ggplot(cost_clean, aes(y = charges, x = smoker, fill = smoker)) +
+  geom_boxplot() +
+  labs(title = "Kostnader vs rökare och ickerökare")
+
+pfit <- cost_clean %>% 
+  filter(!is.na(exercise_level)) %>% 
+  ggplot(aes(y = charges, x = exercise_level, fill = exercise_level)) +
+  geom_boxplot() +
+  labs(title = "Kostnader vs träningsnivå")
+
+psmo + pfit
+
+```
+
+### Kostnader vs ålder och BMI
+
+```{r, fig.width=12, fig.height=4}
+
+page <- ggplot(cost_clean, aes(y = charges, x = age, color = smoker)) +
+  geom_point(alpha = 0.5, position = "jitter") +
+  scale_color_manual(values = c("no" = "darkblue", "yes" = "darkred")) +
+  labs(title = "Kostnader vs ålder")
+
+pbmi <- cost_clean %>% 
+  filter(!is.na(bmi), !is.na(exercise_level)) %>%
+  ggplot(aes(y = charges, x = bmi, color = exercise_level)) +
+  geom_point(alpha = 0.5, position = "jitter") +
+  scale_color_manual(values = c("low" = "purple", "medium" = "orange", "high" = "darkgreen")) +
+  labs(title = "Kostnader vs BMI")
+
+page + pbmi
+
+```
 
 
 ```{r}
 
 ```
-
-
 
 
 

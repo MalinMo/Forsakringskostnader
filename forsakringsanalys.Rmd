@@ -26,6 +26,7 @@ Sys.setlocale("LC_ALL", "Swedish")
 library(tidyverse)
 library(skimr)
 library(patchwork)
+library(broom)
 
 cost_raw <- read.csv("insurance_costs.csv")
 
@@ -282,7 +283,79 @@ Köns- och regionsskillnaderna är små och troligen inte statistiskt betydelsef
 
 ```{r}
 
+cost_clean %>% 
+  summarise(
+    cor_age = cor(charges, age, use = "complete.obs"),
+    cor_bmi = cor(charges, bmi, use = "complete.obs"),
+    cor_children = cor(charges, children, use = "complete.obs"),
+    cor_prior_accidents = cor(charges, prior_accidents, use = "complete.obs"),
+    cor_prior_claims = cor(charges, prior_claims, use = "complete.obs"),
+    cor_annual_checkups = cor(charges, annual_checkups, use = "complete.obs")
+  ) %>%
+  knitr::kable(digits = 2, caption = "Korrelation med försäkringskostnader")
+
+```
+
+#### Sammanfattning korrelation med försäkringskostnader
+
+Korrelationsanalysen visar att ingen enskild numerisk variabel har ett starkt linjärt samband med försäkringskostnaderna. Ålder (0.26) och tidigare olyckor (0.24) har de starkaste sambanden, följt av tidigare skadeanmälningar (0.18) och BMI (0.15). Antal barn (0.03) och årliga hälsokontroller (0.06) visar mycket svaga samband med kostnaderna.
+
+Det är värt att notera att rökning, som visade den tydligaste skillnaden i den beskrivande analysen, är en kategorisk variabel och ingår därför inte i korrelationstabellen. Det svaga linjära sambandet för de numeriska variablerna antyder att kostnaderna påverkas mer av kategoriska faktorer som rökning och försäkringsplan än av de numeriska variablerna.
+
+## Regressionsanalys
+
+Urvalet av prediktorer baseras på den beskrivande analysen och korrelationstabellen. Rökning inkluderas då boxplotanalysen visade att rökare har nästan dubbelt så höga kostnader som icke-rökare, vilket är den tydligaste skillnaden i hela datasetet. Ålder och tidigare olyckor inkluderas då de uppvisar de starkaste korrelationerna med försäkringskostnaderna (0.26 respektive 0.24). Tidigare skadeanmälningar (0.18) och BMI (0.15) inkluderas som hälso- och riskrelaterade variabler med måttliga samband.
+
+Kön och region utesluts då boxplotanalysen visade minimala skillnader mellan grupperna. Antal barn och årliga hälsokontroller utesluts på grund av mycket svaga korrelationer (0.03 respektive 0.06). Träningsnivå och försäkringsplan utesluts från grundmodellen men inkluderas i en utökad modell för att undersöka om de tillför förklaringskraft.
+
+
+```{r}
+
+model1 <- lm(charges ~ smoker + age + prior_accidents + prior_claims + bmi,
+             data = cost_clean,
+             na.action = na.omit)
+
+glance(model1) %>% knitr::kable(digits = 3, caption = "Modell 1 - modellstatistik")
+tidy(model1) %>% knitr::kable(digits = 3, caption = "Modell 1")
+
 ```
 
 
+```{r}
+
+model2 <- lm(charges ~ smoker + age + prior_accidents + prior_claims + bmi + exercise_level + plan_type + chronic_condition,
+             data = cost_clean,
+             na.action = na.omit)
+
+glance(model2) %>% knitr::kable(digits = 3, caption = "Modell 2 - modellstatistik")
+tidy(model2) %>% knitr::kable(digits = 3, caption = "Modell 2")
+
+```
+
+### Slutsatser från regressionsanalysen
+
+**Modeljämförelse**  
+Modell 2 är klart mer lämplig än modell 1. R² ökar från 0.587 till 0.749, vilket innebär att den utökade modellen förklarar ytterligare 16 procentenheter av variationen i försäkringskostnaderna. Residualstandardfelet minskar från 2 945 till 2 306, vilket innebär att modellens genomsnittliga fel minskar med cirka 640 kr per kund. De linjära komponenterna av träningsnivå och försäkringsplan samt kronisk sjukdom är statistiskt signifikanta.
+
+I modell 1 har prior_claims en koefficient på 1 317, men i modell 2 sjunker den till 902. Det betyder att en del av den effekt som prior_claims verkade ha i modell 1 egentligen förklaras av de nya variablerna i modell 2, alltså träningsnivå, försäkringsplan och kronisk sjukdom.
+
+**Tolkning av modell 2**  
+Rökning är den enskilt starkaste prediktorn – rökare har i genomsnitt 7 467 kr högre kostnader än icke-rökare när övriga variabler hålls konstanta. Kronisk sjukdom är den näst starkaste faktorn med 3 780 kr högre kostnader. Högre träningsnivå är associerat med lägre kostnader, och högre försäkringsplan med högre kostnader. Ålder, tidigare olyckor, skadeanmälningar och BMI bidrar alla signifikant men med mindre effekter.
+
+**Kritisk diskussion**  
+Styrkor:  
+- Modellen förklarar 75% av variationen vilket är starkt för verkliga data
+- Alla prediktorer är statistiskt signifikanta
+- Resultaten är rimliga och i linje med försäkringsteori
+
+Svagheter och begränsningar:  
+- Charges är högersnedad vilket kan påverka modellens antaganden om normalfördelade residualer
+- 49 observationer togs bort på grund av saknade värden i modell 2
+- Korrelationen mellan prediktorerna har inte undersökts – multikollinearitet kan förekomma
+- Modellen fångar endast linjära samband – icke-linjära effekter kan finnas, t.ex. att BMI påverkar mer vid höga värden
+- Datasetet saknar variabler som rökarhistorik, hereditet och socioekonomisk status som troligen påverkar försäkringskostnader i verkligheten
+
+```{r}
+
+```
 

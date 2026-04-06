@@ -11,7 +11,8 @@ Installera paketen om du inte redan har dem:
 install.packages("tidyverse")
 install.packages("skimr")
 install:pacakges("patchwork")
+install.packages("broom")
 ```
 
 **Kör analysen**
-Klicka på Knit i RStudio för att rendera dokumentet. En HTML-fil skapas automatiskt i samma mapp.
+Klicka på Knit i filen forsakringsanalys.Rmd RStudio för att rendera dokumentet. En HTML-fil skapas automatiskt i samma mapp.

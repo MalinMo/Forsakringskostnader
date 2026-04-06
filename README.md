@@ -15,4 +15,4 @@ install.packages("broom")
 ```
 
 **Kör analysen**
-Klicka på Knit i filen forsakringsanalys.Rmd RStudio för att rendera dokumentet. En HTML-fil skapas automatiskt i samma mapp.
+Klicka på Knit i filen forsakringsanalys.Rmd i RStudio för att rendera dokumentet. En HTML-fil skapas automatiskt i samma mapp.

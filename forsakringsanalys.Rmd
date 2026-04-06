@@ -32,16 +32,16 @@ cost_raw <- read.csv("insurance_costs.csv")
 tibble(
   variabel = names(cost_raw),
   datatyp = sapply(cost_raw, class)
-) |> knitr::kable()
+)  %>%  knitr::kable()
 
 skim_without_charts(cost_raw)
 
-cost_raw |> count(sex) |> knitr::kable()
-cost_raw |> count(smoker) |> knitr::kable()
+cost_raw %>% count(sex) %>% knitr::kable()
+cost_raw %>% count(smoker) %>% knitr::kable()
 
 ```
 
-### Samanfattning dataförståelse
+### Samanfattning av dataförståelse
 
 Datasetet består av 1100 kunder med 14 variabler som beskriver demografiska egenskaper, livsstilsfaktorer och försäkringskostnader. Medelåldern är 42.5 år och medelkostnaden uppgår till cirka 10 060 kr med en stor spridning, vilket indikerar att kostnaderna inte är normalfördelade.
 
@@ -93,7 +93,6 @@ cost_clean <- cost_clean %>%
 
 ```
 
-
 ### Kontrol av datatyper
 
 ```{r}
@@ -101,13 +100,13 @@ cost_clean <- cost_clean %>%
 tibble(
   variabel = names(cost_clean),
   datatyp = sapply(cost_clean, class)
-) |> knitr::kable()
+) %>% knitr::kable()
 
 skim_without_charts(cost_clean)
 
 ```
 
-### Sammanfattning
+### Sammanfattning av datastädning
 
 I datastädningen har inkonsekvent kapitalisering och eventuella blanksteg hanterats. Textvariabler har gjorts om till faktorer för att underlätta användningen i regressionsanalysen. Variablerna exercies_level och plan_type har dessutom gjort om till ordnade faktorer. annual_checkups har gjorts om från decimaltal till heltal. Variabeln customer_id har tagits bort då den inte kommer användas i analysen. En ny variabel för BMI-kategorier har skapats baserad på WHOs definitioner.
 
@@ -117,9 +116,9 @@ I datastädningen har inkonsekvent kapitalisering och eventuella blanksteg hante
 
 ```{r}
 
-cost_clean |> count(sex) |> knitr::kable()
-cost_clean |> count(smoker) |> knitr::kable()
-cost_clean |> count(exercise_level) |> knitr::kable()
+cost_clean %>% count(sex) %>% knitr::kable()
+cost_clean %>% count(smoker) %>% knitr::kable()
+cost_clean %>% count(exercise_level) %>% knitr::kable()
 
 ```
 
@@ -142,6 +141,10 @@ p3 <- ggplot(cost_clean, aes(x = exercise_level)) +
 p1 + p2 + p3
 
 ```
+
+#### Sammanfattning fördelning av kategoriska variabler
+
+Könsfördelningen är jämn med 551 kvinnor och 549 män. Majoriteten av kunderna är icke-rökare (896 st) jämfört med rökare (204 st). Träningsnivån domineras av medium-nivå, medan high-nivå är minst vanlig.
 
 ### Fördelning av kostnader
 
@@ -183,7 +186,6 @@ cost_clean %>%
 
 ```
 
-
 ```{r, fig.width=12, fig.height=4}
 
 pc1 <- ggplot(cost_clean, aes(x = charges, fill = after_stat(x))) +
@@ -201,7 +203,14 @@ pc1 + pc2
 
 ```
 
-### Kostnader vs rökning och träning
+#### Sammanfattning av kostnadsfördelning
+
+Rökare har betydligt högre genomsnittliga kostnader än icke-rökare, vilket tyder på att rökning är en stark kostnadsdrivare. Träningsnivå visar ett svagare mönster, där låg träning har något högre kostnader än hög träning. BMI-kategorierna visar att fetma och övervikt är förknippade med högre kostnader jämfört med normalvikt.
+
+Kostnadsfördelningen är högersnedad med de flesta kunder i intervallet 5 000–15 000 kr. Zoom-grafen visar att ett fåtal kunder har mycket höga kostnader över 25 000 kr, vilket kan påverka modellens precision.
+
+
+### Kostnader vs rökning och träningsnivå
 
 ```{r, fig.width=12, fig.height=4}
 
@@ -218,6 +227,10 @@ pfit <- cost_clean %>%
 psmo + pfit
 
 ```
+
+#### Sammanfattning kostnader vs rökning och träningsnivå 
+
+Rökare har tydligt högre kostnader med en median runt 16 000 kr jämfört med cirka 8 000 kr för icke-rökare. Träningsnivå visar ett svagare samband där skillnaderna mellan grupperna är mindre uttalade.
 
 ### Kostnader vs ålder och BMI
 
@@ -239,6 +252,10 @@ page + pbmi
 
 ```
 
+#### Sammanfattning kostander vs ålder och BMI
+
+Det finns ett positivt samband mellan ålder och kostnader, där äldre kunder tenderar att ha högre kostnader. Rökare (röda punkter) ligger genomgående högre än icke-rökare oavsett ålder. BMI-grafen visar inget lika tydligt mönster med träningsnivå.
+
 ### Skillnader mellan grupper
 
 ```{r, fig.width=12, fig.height=4}
@@ -259,8 +276,9 @@ psex + preg + ppla
 
 ```
 
+#### Sammanfattning skillnader mellan grupper
 
-
+Köns- och regionsskillnaderna är små och troligen inte statistiskt betydelsefulla. Försäkringsplanen visar däremot ett tydligare mönster där premium-kunder har högre kostnader än basic-kunder, vilket kan bero på att premium-planer attraherar kunder med högre vårdbehov.
 
 ```{r}
 

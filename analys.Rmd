@@ -145,18 +145,57 @@ p1 + p2 + p3
 
 ### Fördelning av kostnader
 
+```{r}
+cost_clean %>% 
+  group_by(smoker) %>%
+  summarise(
+    medelvärde = mean(charges, na.rm = TRUE),
+    median = median(charges, na.rm = TRUE),
+    sd = sd(charges, na.rm = TRUE),
+    antal = n(),
+    .groups = "drop"
+  ) %>% 
+  knitr::kable(caption = "Kostnader per rökarstatus", digits = 0)
+
+cost_clean %>% 
+  filter(!is.na(exercise_level)) %>% 
+  group_by(exercise_level) %>%
+  summarise(
+    medelvärde = mean(charges, na.rm = TRUE),
+    median = median(charges, na.rm = TRUE),
+    sd = sd(charges, na.rm = TRUE),
+    antal = n(),
+    .groups = "drop"
+  ) %>% 
+  knitr::kable(caption = "Kostnader per träningsnivå", digits = 0)
+
+cost_clean %>%
+  filter(!is.na(bmi_category)) %>% 
+  group_by(bmi_category) %>%
+  summarise(
+    medelvärde = mean(charges, na.rm = TRUE),
+    median = median(charges, na.rm = TRUE),
+    sd = sd(charges, na.rm = TRUE),
+    antal = n(),
+    .groups = "drop"
+  ) %>% 
+  knitr::kable(caption = "Kostnader per BMI-kategori", digits = 0)
+
+```
+
+
 ```{r, fig.width=12, fig.height=4}
 
 pc1 <- ggplot(cost_clean, aes(x = charges, fill = after_stat(x))) +
   geom_histogram(bins = 10, color = "white") +
   scale_fill_gradient(low = "darkblue", high = "lightblue") +
-  labs(title = "Fördelning av charges")
+  labs(title = "Fördelning av kostnader", x = "Kostnader", y = "Antal")
 
 pc2 <- ggplot(cost_clean, aes(x = charges, fill = after_stat(x))) +
   geom_histogram(bins = 10, color = "white") +
   scale_fill_gradient(low = "darkblue", high = "lightblue") +
   coord_cartesian(xlim = c(20000, 35000), ylim = c(0, 20)) +
-  labs(title = "Zoom: höga kostnader")
+  labs(title = "Zoom: höga kostnader", x = "Kostnader", y = "Antal")
 
 pc1 + pc2
 

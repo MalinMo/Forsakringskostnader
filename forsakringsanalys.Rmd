@@ -170,40 +170,24 @@ Könsfördelningen är jämn med 551 kvinnor och 549 män. Majoriteten av kunder
 ### Fördelning av kostnader
 
 ```{r}
-cost_clean %>% 
-  group_by(smoker) %>%
-  summarise(
-    medelvärde = mean(charges, na.rm = TRUE),
-    median = median(charges, na.rm = TRUE),
-    sd = sd(charges, na.rm = TRUE),
-    antal = n(),
-    .groups = "drop"
-  ) %>% 
-  knitr::kable(caption = "Kostnader per rökarstatus", digits = 0)
 
-cost_clean %>% 
-  filter(!is.na(exercise_level)) %>% 
-  group_by(exercise_level) %>%
-  summarise(
-    medelvärde = mean(charges, na.rm = TRUE),
-    median = median(charges, na.rm = TRUE),
-    sd = sd(charges, na.rm = TRUE),
-    antal = n(),
-    .groups = "drop"
-  ) %>% 
-  knitr::kable(caption = "Kostnader per träningsnivå", digits = 0)
+sammanfatta_kostnader <- function(data, grupp) {
+  data %>%
+    filter(!is.na({{grupp}})) %>%
+    group_by({{grupp}}) %>%
+    summarise(
+      medelvärde = mean(charges, na.rm = TRUE),
+      median = median(charges, na.rm = TRUE),
+      sd = sd(charges, na.rm = TRUE),
+      antal = n(),
+      .groups = "drop"
+    ) %>%
+    knitr::kable(digits = 0)
+}
 
-cost_clean %>%
-  filter(!is.na(bmi_category)) %>% 
-  group_by(bmi_category) %>%
-  summarise(
-    medelvärde = mean(charges, na.rm = TRUE),
-    median = median(charges, na.rm = TRUE),
-    sd = sd(charges, na.rm = TRUE),
-    antal = n(),
-    .groups = "drop"
-  ) %>% 
-  knitr::kable(caption = "Kostnader per BMI-kategori", digits = 0)
+sammanfatta_kostnader(cost_clean, smoker)
+sammanfatta_kostnader(cost_clean, exercise_level)
+sammanfatta_kostnader(cost_clean, bmi_category)
 
 ```
 

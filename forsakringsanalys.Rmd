@@ -7,9 +7,9 @@ output: html_document
 
 # Försäkringsanalys
 
-Försäkringsbranschen bygger på förmågan att korrekt bedöma och prissätta risk. För att säkerställa att prissättningen återspeglar de faktiska kostnadsdrivarna har en analys genomförts av bolagets historiska kunddata, med fokus på demografiska egenskaper, livsstilsfaktorer och hälsorelaterade variabler.
+Syftet med denna analys är att undersöka vilka faktorer som påverkar försäkringskostnaderna mest. Datasetet innehåller information om kunder, livsstilsfaktorer och hälsorelaterade variabler, och analysen fokuserar på att identifiera mönster och samband i datan.
 
-Rapporten presenterar en explorativ dataanalys följt av en regressionsanalys i syfte att identifiera vilka variabler som har starkast samband med försäkringskostnaderna. Resultaten är avsedda att utgöra ett underlag för ledningsgruppens arbete med framtida prissättningsstrategier.
+Rapporten inleds med en beskrivande analys för att få en överblick över datan, följt av en regressionsanalys för att undersöka vilka variabler som bäst förklarar kostnadsskillnaderna mellan kunder. Målet är att ge ett underlag för framtida prissättning.
 
 ## 1. Dataförståelse
 
@@ -46,9 +46,11 @@ cost_raw %>% count(smoker) %>% knitr::kable()
 
 Datasetet består av 1100 kunder med 14 variabler som beskriver demografiska egenskaper, livsstilsfaktorer och försäkringskostnader. Medelåldern är 42.5 år och medelkostnaden uppgår till cirka 10 060 kr med en stor spridning, vilket indikerar att kostnaderna inte är normalfördelade.
 
-Två variabler har saknade värden, bmi (28 observationer) och annual_checkups (20 observationer). Variabeln exercise_level har dessutom 22 tomma strängar.
+Två variabler har saknade värden, bmi (28 observationer) och annual_checkups (20 observationer). Variabeln exercise_level har dessutom 22 tomma strängar som behöver konverteras till saknade värden.
 
-Majoriteten av kunderna är icke-rökare, och könsfördelningen är relativt jämn. Variablerna prior_accidents och prior_claims har medelvärden nära noll, vilket tyder på att skador och skadeanmälningar är ovanliga i kundstocken. Inkonsekvent kapitalisering förekommer och behöver hanteras.
+Flera variabler lagras som text men är kategoriska till sin natur, exempelvis smoker, sex och region, och behöver konverteras till faktorer innan analysen. Inkonsekvent kapitalisering förekommer också och behöver hanteras.
+
+Majoriteten av kunderna är icke-rökare och könsfördelningen är relativt jämn. Variablerna prior_accidents och prior_claims har medelvärden nära noll, vilket tyder på att skador och skadeanmälningar är ovanliga i kundstocken.
 
 ## 2. Datastädning och förberedelser
 
@@ -111,7 +113,7 @@ skim_without_charts(cost_clean)
 
 I datastädningen har inkonsekvent kapitalisering och eventuella blanksteg hanterats. Textvariabler har gjorts om till faktorer för att underlätta användningen i regressionsanalysen. Variablerna exercies_level och plan_type har dessutom gjort om till ordnade faktorer. annual_checkups har gjorts om från decimaltal till heltal. Variabeln customer_id har tagits bort då den inte kommer användas i analysen. En ny variabel för BMI-kategorier har skapats baserad på WHOs definitioner.
 
-## Beskrivande analys
+## 3. Beskrivande analys
 
 ### Tabeller över fördelning av kategoriska variabler
 
@@ -135,7 +137,9 @@ p2 <- ggplot(cost_clean, aes(x = smoker)) +
   geom_bar(fill = "darkgreen") +
   labs(title = "Rökare", x = "Rökare", y = "Antal")
 
-p3 <- ggplot(cost_clean, aes(x = exercise_level)) +
+p3 <- cost_clean %>% 
+  filter(!is.na(exercise_level)) %>% 
+  ggplot(aes(x = exercise_level)) +
   geom_bar(fill = "orange") +
   labs(title = "Träningsnivå", x = "Träningsnivå", y = "Antal")
 
@@ -283,7 +287,7 @@ psex + preg + ppla
 
 Köns- och regionsskillnaderna är små och troligen inte statistiskt betydelsefulla. Försäkringsplanen visar däremot ett tydligare mönster där premium-kunder har högre kostnader än basic-kunder, vilket kan bero på att premium-planer attraherar kunder med högre vårdbehov.
 
-### Korrelation med försäkringskostnade
+### Korrelation med försäkringskostnader
 
 ```{r}
 
@@ -306,7 +310,7 @@ Korrelationsanalysen visar att ingen enskild numerisk variabel har ett starkt li
 
 Det är värt att notera att rökning, som visade den tydligaste skillnaden i den beskrivande analysen, är en kategorisk variabel och ingår därför inte i korrelationstabellen. Det svaga linjära sambandet för de numeriska variablerna antyder att kostnaderna påverkas mer av kategoriska faktorer som rökning och försäkringsplan än av de numeriska variablerna.
 
-## Regressionsanalys
+## 4. Regressionsanalys
 
 Urvalet av prediktorer baseras på den beskrivande analysen och korrelationstabellen. Rökning inkluderas då boxplotanalysen visade att rökare har nästan dubbelt så höga kostnader som icke-rökare, vilket är den tydligaste skillnaden i hela datasetet. Ålder och tidigare olyckor inkluderas eftersom de hade starkaste korrelationerna med försäkringskostnaderna (0.26 respektive 0.24). Tidigare skadeanmälningar (0.18) och BMI (0.15) inkluderas som hälso- och riskrelaterade variabler med lägre samband.
 
@@ -407,3 +411,10 @@ En möjlig förbättring av modellen vore att undersöka interaktionseffekter, t
 
 ```
 
+## 5. Slutsatser
+
+Analysen visar att rökning och kronisk sjukdom är de faktorer som tydligast driver försäkringskostnaderna, följt av ålder, BMI och tidigare skadehistorik. Regressionsmodellen förklarar 75% av variationen i kostnaderna och bedöms kunna användas som beslutsstöd vid framtida prissättning.
+
+Modellen fångar dock inte icke-linjära samband eller interaktionseffekter mellan variabler. Datasetet saknar också information som rökarhistorik och socioekonomisk status, vilket troligen påverkar kostnaderna i verkligheten.
+
+Möjliga förbättringar inkluderar att undersöka interaktionseffekter, hantera de saknade värdena mer systematiskt samt komplettera datasetet med fler relevanta variabler.

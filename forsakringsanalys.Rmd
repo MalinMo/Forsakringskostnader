@@ -143,7 +143,7 @@ p1 + p2 + p3
 
 ```
 
-#### Sammanfattning fördelning av kategoriska variabler
+#### Tolkning fördelning av kategoriska variabler
 
 Könsfördelningen är jämn med 551 kvinnor och 549 män. Majoriteten av kunderna är icke-rökare (896 st) jämfört med rökare (204 st). Träningsnivån domineras av medium-nivå, medan high-nivå är minst vanlig.
 
@@ -204,7 +204,7 @@ pc1 + pc2
 
 ```
 
-#### Sammanfattning av kostnadsfördelning
+#### Tolkning av kostnadsfördelning
 
 Rökare har betydligt högre genomsnittliga kostnader än icke-rökare, vilket tyder på att rökning är en stark kostnadsdrivare. Träningsnivå visar ett svagare mönster, där låg träning har något högre kostnader än hög träning. BMI-kategorierna visar att fetma och övervikt är förknippade med högre kostnader jämfört med normalvikt.
 
@@ -229,7 +229,7 @@ psmo + pfit
 
 ```
 
-#### Sammanfattning kostnader vs rökning och träningsnivå 
+#### Tolkning kostnader vs rökning och träningsnivå 
 
 Rökare har tydligt högre kostnader med en median runt 16 000 kr jämfört med cirka 8 000 kr för icke-rökare. Träningsnivå visar ett svagare samband där skillnaderna mellan grupperna är mindre uttalade.
 
@@ -239,6 +239,7 @@ Rökare har tydligt högre kostnader med en median runt 16 000 kr jämfört med 
 
 page <- ggplot(cost_clean, aes(y = charges, x = age, color = smoker)) +
   geom_point(alpha = 0.5, position = "jitter") +
+  geom_smooth(method = "lm", se = FALSE) +
   scale_color_manual(values = c("no" = "darkblue", "yes" = "darkred")) +
   labs(title = "Kostnader vs ålder")
 
@@ -246,6 +247,7 @@ pbmi <- cost_clean %>%
   filter(!is.na(bmi), !is.na(exercise_level)) %>%
   ggplot(aes(y = charges, x = bmi, color = exercise_level)) +
   geom_point(alpha = 0.5, position = "jitter") +
+  geom_smooth(method = "lm", se = FALSE) +
   scale_color_manual(values = c("low" = "purple", "medium" = "orange", "high" = "darkgreen")) +
   labs(title = "Kostnader vs BMI")
 
@@ -253,7 +255,7 @@ page + pbmi
 
 ```
 
-#### Sammanfattning kostander vs ålder och BMI
+#### Tolkning kostander vs ålder och BMI
 
 Det finns ett positivt samband mellan ålder och kostnader, där äldre kunder tenderar att ha högre kostnader. Rökare (röda punkter) ligger genomgående högre än icke-rökare oavsett ålder. BMI-grafen visar inget lika tydligt mönster med träningsnivå.
 
@@ -277,9 +279,11 @@ psex + preg + ppla
 
 ```
 
-#### Sammanfattning skillnader mellan grupper
+#### Tolkning skillnader mellan grupper
 
 Köns- och regionsskillnaderna är små och troligen inte statistiskt betydelsefulla. Försäkringsplanen visar däremot ett tydligare mönster där premium-kunder har högre kostnader än basic-kunder, vilket kan bero på att premium-planer attraherar kunder med högre vårdbehov.
+
+### Korrelation med försäkringskostnade
 
 ```{r}
 
@@ -296,7 +300,7 @@ cost_clean %>%
 
 ```
 
-#### Sammanfattning korrelation med försäkringskostnader
+#### Tolkning korrelation med försäkringskostnader
 
 Korrelationsanalysen visar att ingen enskild numerisk variabel har ett starkt linjärt samband med försäkringskostnaderna. Ålder (0.26) och tidigare olyckor (0.24) har de starkaste sambanden, följt av tidigare skadeanmälningar (0.18) och BMI (0.15). Antal barn (0.03) och årliga hälsokontroller (0.06) visar mycket svaga samband med kostnaderna.
 
@@ -304,10 +308,13 @@ Det är värt att notera att rökning, som visade den tydligaste skillnaden i de
 
 ## Regressionsanalys
 
-Urvalet av prediktorer baseras på den beskrivande analysen och korrelationstabellen. Rökning inkluderas då boxplotanalysen visade att rökare har nästan dubbelt så höga kostnader som icke-rökare, vilket är den tydligaste skillnaden i hela datasetet. Ålder och tidigare olyckor inkluderas då de uppvisar de starkaste korrelationerna med försäkringskostnaderna (0.26 respektive 0.24). Tidigare skadeanmälningar (0.18) och BMI (0.15) inkluderas som hälso- och riskrelaterade variabler med måttliga samband.
+Urvalet av prediktorer baseras på den beskrivande analysen och korrelationstabellen. Rökning inkluderas då boxplotanalysen visade att rökare har nästan dubbelt så höga kostnader som icke-rökare, vilket är den tydligaste skillnaden i hela datasetet. Ålder och tidigare olyckor inkluderas eftersom de hade starkaste korrelationerna med försäkringskostnaderna (0.26 respektive 0.24). Tidigare skadeanmälningar (0.18) och BMI (0.15) inkluderas som hälso- och riskrelaterade variabler med lägre samband.
 
-Kön och region utesluts då boxplotanalysen visade minimala skillnader mellan grupperna. Antal barn och årliga hälsokontroller utesluts på grund av mycket svaga korrelationer (0.03 respektive 0.06). Träningsnivå och försäkringsplan utesluts från grundmodellen men inkluderas i en utökad modell för att undersöka om de tillför förklaringskraft.
+Kön och region utesluts då boxplotanalysen visade minimala skillnader mellan grupperna. Antal barn och årliga hälsokontroller utesluts på grund av mycket svaga korrelationer (0.03 respektive 0.06). Träningsnivå och försäkringsplan utesluts från grundmodellen men testas i en utökad modell för att undersöka om de förbättrar förklaringsgraden.
 
+### Modelljämförelse
+
+#### Modell 1
 
 ```{r}
 
@@ -320,6 +327,7 @@ tidy(model1) %>% knitr::kable(digits = 3, caption = "Modell 1")
 
 ```
 
+#### Modell 2 - utökad
 
 ```{r}
 
@@ -332,28 +340,68 @@ tidy(model2) %>% knitr::kable(digits = 3, caption = "Modell 2")
 
 ```
 
-### Slutsatser från regressionsanalysen
+#### Tolkning modelljämförelse
 
-**Modeljämförelse**  
-Modell 2 är klart mer lämplig än modell 1. R² ökar från 0.587 till 0.749, vilket innebär att den utökade modellen förklarar ytterligare 16 procentenheter av variationen i försäkringskostnaderna. Residualstandardfelet minskar från 2 945 till 2 306, vilket innebär att modellens genomsnittliga fel minskar med cirka 640 kr per kund. De linjära komponenterna av träningsnivå och försäkringsplan samt kronisk sjukdom är statistiskt signifikanta.
+Modell 2 är mer lämplig än modell 1. R² ökar från 0.587 till 0.749, vilket innebär att den utökade modellen förklarar ytterligare 16 procentenheter av variationen i försäkringskostnaderna. Residualstandardfelet minskar från 2 945 till 2 306, vilket innebär att modellens genomsnittliga fel minskar med cirka 640 kr per kund. 
 
-I modell 1 har prior_claims en koefficient på 1 317, men i modell 2 sjunker den till 902. Det betyder att en del av den effekt som prior_claims verkade ha i modell 1 egentligen förklaras av de nya variablerna i modell 2, alltså träningsnivå, försäkringsplan och kronisk sjukdom.
+De linjära komponenterna av träningsnivå, försäkringsplan och kronisk sjukdom är statistiskt signifikanta, vilket bekräftar att det var motiverat att inkludera dem i modell 2. De kvadratiska komponenterna av de ordnande variablerna (exercise_level.Q och plan_type.Q) är däremot inte signifikanta, vilket tyder på att sambanden är linjära snarare än böjda.
 
-**Tolkning av modell 2**  
-Rökning är den enskilt starkaste prediktorn – rökare har i genomsnitt 7 467 kr högre kostnader än icke-rökare när övriga variabler hålls konstanta. Kronisk sjukdom är den näst starkaste faktorn med 3 780 kr högre kostnader. Högre träningsnivå är associerat med lägre kostnader, och högre försäkringsplan med högre kostnader. Ålder, tidigare olyckor, skadeanmälningar och BMI bidrar alla signifikant men med mindre effekter.
+### Faktiska vs predikterade kostnader (modell 2)
 
-**Kritisk diskussion**  
-Styrkor:  
-- Modellen förklarar 75% av variationen vilket är starkt för verkliga data
-- Alla prediktorer är statistiskt signifikanta
-- Resultaten är rimliga och i linje med försäkringsteori
+```{r}
 
-Svagheter och begränsningar:  
-- Charges är högersnedad vilket kan påverka modellens antaganden om normalfördelade residualer
-- 49 observationer togs bort på grund av saknade värden i modell 2
-- Korrelationen mellan prediktorerna har inte undersökts – multikollinearitet kan förekomma
-- Modellen fångar endast linjära samband – icke-linjära effekter kan finnas, t.ex. att BMI påverkar mer vid höga värden
-- Datasetet saknar variabler som rökarhistorik, hereditet och socioekonomisk status som troligen påverkar försäkringskostnader i verkligheten
+cost_clean_pred <- cost_clean %>%
+  filter(!is.na(bmi), !is.na(exercise_level), !is.na(chronic_condition)) %>%
+  mutate(predicted = predict(model2, .))
+
+ggplot(cost_clean_pred, aes(x = predicted, y = charges)) +
+  geom_point(alpha = 0.4) +
+  geom_abline(color = "red") +
+  labs(title = "Faktiska vs predikterade kostnader",
+       x = "Predikterade kostnader",
+       y = "Faktiska kostnader")
+
+```
+
+#### Tolkning faktiska vs predikterade kostnader (modell 2)
+
+Punkterna följer den röda linjen relativt väl, vilket indikerar att modellen har god anpassning. Den röda linjen representerar perfekt anpassning, dvs. där faktiska och predikterade kostnader är lika. Vid höga predikterade värden ökar spridningen något, vilket tyder på att modellen är något sämre på att förutsäga kostnader för de dyraste kunderna.
+
+### Residualplot (modell 2)
+
+```{r}
+
+ggplot(cost_clean_pred, aes(x = predicted, y = charges - predicted)) +
+  geom_point(alpha = 0.4) +
+  geom_hline(yintercept = 0, color = "red") +
+  labs(title = "Residualplot",
+       x = "Predikterade kostnader",
+       y = "Residualer")
+
+```
+
+#### Tolkning residualplot (modell 2)
+
+Residualerna är relativt jämnt fördelade runt nolllinjen, vilket tyder på att modellen inte systematiskt över- eller underskattar kostnaderna. Det finns dock några extrema outliers med mycket höga positiva residualer, vilket bekräftar att modellen underskattar kostnader för vissa kunder. Spridningen verkar också öka något vid högre predikterade värden, vilket är en av modellens begränsningar.
+
+### Sammanfattning av regressionsanalysen
+
+Rökning är den starkaste prediktorn – rökare har i genomsnitt 7 467 kr högre kostnader än icke-rökare. Kronisk sjukdom är den näst starkaste faktorn med 3 780 kr högre kostnader. Högre träningsnivå är associerat med lägre kostnader och högre försäkringsplan med högre kostnader. Ålder, BMI, tidigare olyckor och skadeanmälningar bidrar alla signifikant men med mindre effekter.
+
+Det är värt att notera att koefficienten för tidigare skadeanmälningar sjunker från 1 317 i modell 1 till 902 i modell 2, vilket tyder på att en del av effekten i modell 1 egentligen förklaras av träningsnivå, försäkringsplan och kronisk sjukdom.
+
+**Styrkor:**  
+- Modellen förklarar 75% av variationen, vilket är starkt för verkliga data
+- Resultaten följer rimliga mönster – faktorer som rökning och kronisk sjukdom driver kostnader uppåt, vilket stämmer med vad man kan förvänta sig
+- Modellen kan användas som beslutsstöd vid framtida prissättning av liknande kunder
+
+**Svagheter och begränsningar:**    
+- 49 observationer togs bort på grund av saknade värden
+- Multikollinearitet mellan prediktorerna har inte undersökts
+- Modellen fångar endast linjära samband
+- Datasetet saknar variabler som rökarhistorik och socioekonomisk status
+
+En möjlig förbättring av modellen vore att undersöka interaktionseffekter, t.ex. mellan BMI och träningsnivå, då trendlinjerna i figur "Kostnader vs BMI antyder att BMI påverkar kostnader olika beroende på träningsnivå.
 
 ```{r}
 

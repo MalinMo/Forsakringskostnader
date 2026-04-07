@@ -23,13 +23,14 @@ Sys.setlocale("LC_ALL", "Swedish")
 
 ```{r}
 
-library(tidyverse)
-library(skimr)
-library(patchwork)
-library(broom)
+library(tidyverse)  # Datamanipulering och visualisering
+library(skimr)      # Statistiska sammanfattningar
+library(patchwork)  # Kombinerar flera grafer
+library(broom)      # Snyggare tabeller från regressionsmodellerna
 
 cost_raw <- read.csv("insurance_costs.csv")
 
+# Visar variabelnamn och datatyper som en formaterad tabell
 tibble(
   variabel = names(cost_raw),
   datatyp = sapply(cost_raw, class)
@@ -60,13 +61,16 @@ Majoriteten av kunderna är icke-rökare och könsfördelningen är relativt jä
 
 cost_clean <- cost_raw %>% 
   mutate(
+    # Tar bort mellanslag och gör om till gemena bokstäver
     sex = str_to_lower(str_trim(sex)),
     region = str_to_lower(str_trim(region)),
     smoker = str_to_lower(str_trim(smoker)),
     chronic_condition = str_to_lower(str_trim(chronic_condition)),
     exercise_level = str_to_lower(str_trim(exercise_level)),
-    exercise_level = na_if(exercise_level, ""),
     plan_type = str_to_lower(str_trim(plan_type)),
+    # Konverterar tomma strängar till NA innan faktorkonvertering
+    exercise_level = na_if(exercise_level, ""),
+    # Gör om text till faktorer
     sex = as.factor(sex),
     region = as.factor(region),
     smoker = as.factor(smoker),
@@ -74,7 +78,8 @@ cost_clean <- cost_raw %>%
     exercise_level = factor(exercise_level, levels = c("low", "medium", "high"), ordered = TRUE),
     plan_type = factor(plan_type, levels = c("basic", "standard", "premium"), ordered = TRUE),
     annual_checkups = as.integer(annual_checkups)
-  ) %>% 
+  ) %>%
+  # Tar bort customer_id då den inte används i analysen
   select(-customer_id)
 
 ```
@@ -82,8 +87,10 @@ cost_clean <- cost_raw %>%
 ### BMI-kategorier
 
 ```{r}
+
 cost_clean <- cost_clean %>%
   mutate(
+    # BMI-kategorier enligt WHOs definitioner
     bmi_category = case_when(
       bmi < 18.5 ~ "undervikt",
       bmi < 25   ~ "normalvikt",
@@ -111,7 +118,9 @@ skim_without_charts(cost_clean)
 
 ### Sammanfattning av datastädning
 
-I datastädningen har inkonsekvent kapitalisering och eventuella blanksteg hanterats. Textvariabler har gjorts om till faktorer för att underlätta användningen i regressionsanalysen. Variablerna exercies_level och plan_type har dessutom gjort om till ordnade faktorer. annual_checkups har gjorts om från decimaltal till heltal. Variabeln customer_id har tagits bort då den inte kommer användas i analysen. En ny variabel för BMI-kategorier har skapats baserad på WHOs definitioner.
+I datastädningen har inkonsekvent kapitalisering och eventuella blanksteg hanterats. Textvariabler har gjorts om till faktorer för att underlätta användningen i regressionsanalysen. Variablerna exercies_level och plan_type har dessutom gjort om till ordnade faktorer. annual_checkups har gjorts om från decimaltal till heltal. Variabeln customer_id har tagits bort då den inte kommer användas i analysen.
+
+En ny variabel för BMI-kategorier har skapats baserad på WHOs definitioner för att göra det tydligare hur detta kopplar till hälsa.Ytterligare nya variabler som åldersgrupp och risknivå övervägdes men bedömdes inte tillföra något utöver de befintliga variablerna i analysen.
 
 ## 3. Beskrivande analys
 
@@ -122,12 +131,13 @@ I datastädningen har inkonsekvent kapitalisering och eventuella blanksteg hante
 cost_clean %>% count(sex) %>% knitr::kable()
 cost_clean %>% count(smoker) %>% knitr::kable()
 cost_clean %>% count(exercise_level) %>% knitr::kable()
+cost_clean %>% count(bmi_category) %>% knitr::kable()
 
 ```
 
 ### Visualisering av fördelning av kategoriska variabler
 
-```{r, fig.width=12, fig.height=4}
+```{r, fig.width=10, fig.height=8}
 
 p1 <- ggplot(cost_clean, aes(x = sex)) +
   geom_bar(fill = "blue") +
@@ -143,13 +153,19 @@ p3 <- cost_clean %>%
   geom_bar(fill = "orange") +
   labs(title = "Träningsnivå", x = "Träningsnivå", y = "Antal")
 
-p1 + p2 + p3
+p4 <- cost_clean %>% 
+  filter(!is.na(bmi_category)) %>% 
+  ggplot(aes(x = bmi_category)) +
+  geom_bar(fill = "purple") +
+  labs(title = "BMI-kategori", x = "BMI", y = "Antal")
+
+(p1 + p2) / (p3 + p4)
 
 ```
 
 #### Tolkning fördelning av kategoriska variabler
 
-Könsfördelningen är jämn med 551 kvinnor och 549 män. Majoriteten av kunderna är icke-rökare (896 st) jämfört med rökare (204 st). Träningsnivån domineras av medium-nivå, medan high-nivå är minst vanlig.
+Könsfördelningen är jämn med 551 kvinnor och 549 män. Majoriteten av kunderna är icke-rökare (896 st) jämfört med rökare (204 st). Träningsnivån domineras av medium-nivå, medan high-nivå är minst vanlig. Flest kunder är överviktiga och det är något fler som har fetma än som är normalviktiga medan få är underviktiga.
 
 ### Fördelning av kostnader
 
@@ -201,6 +217,7 @@ pc1 <- ggplot(cost_clean, aes(x = charges, fill = after_stat(x))) +
 pc2 <- ggplot(cost_clean, aes(x = charges, fill = after_stat(x))) +
   geom_histogram(bins = 10, color = "white") +
   scale_fill_gradient(low = "darkblue", high = "lightblue") +
+  # coord_cartesian zoomar in utan att ta bort data
   coord_cartesian(xlim = c(20000, 35000), ylim = c(0, 20)) +
   labs(title = "Zoom: höga kostnader", x = "Kostnader", y = "Antal")
 
@@ -242,7 +259,9 @@ Rökare har tydligt högre kostnader med en median runt 16 000 kr jämfört med 
 ```{r, fig.width=12, fig.height=4}
 
 page <- ggplot(cost_clean, aes(y = charges, x = age, color = smoker)) +
+  # Jitter sprider punkter som ligger på varandra
   geom_point(alpha = 0.5, position = "jitter") +
+  # geom_smooth lägger till en linjär trendlinje
   geom_smooth(method = "lm", se = FALSE) +
   scale_color_manual(values = c("no" = "darkblue", "yes" = "darkred")) +
   labs(title = "Kostnader vs ålder")
@@ -250,7 +269,9 @@ page <- ggplot(cost_clean, aes(y = charges, x = age, color = smoker)) +
 pbmi <- cost_clean %>% 
   filter(!is.na(bmi), !is.na(exercise_level)) %>%
   ggplot(aes(y = charges, x = bmi, color = exercise_level)) +
+  # Jitter sprider punkter som ligger på varandra
   geom_point(alpha = 0.5, position = "jitter") +
+  # geom_smooth lägger till en linjär trendlinje
   geom_smooth(method = "lm", se = FALSE) +
   scale_color_manual(values = c("low" = "purple", "medium" = "orange", "high" = "darkgreen")) +
   labs(title = "Kostnader vs BMI")
@@ -324,6 +345,7 @@ Kön och region utesluts då boxplotanalysen visade minimala skillnader mellan g
 
 model1 <- lm(charges ~ smoker + age + prior_accidents + prior_claims + bmi,
              data = cost_clean,
+             # na.omit hanterar saknade värden lokalt i regressionen
              na.action = na.omit)
 
 glance(model1) %>% knitr::kable(digits = 3, caption = "Modell 1 - modellstatistik")
@@ -337,6 +359,7 @@ tidy(model1) %>% knitr::kable(digits = 3, caption = "Modell 1")
 
 model2 <- lm(charges ~ smoker + age + prior_accidents + prior_claims + bmi + exercise_level + plan_type + chronic_condition,
              data = cost_clean,
+             # na.omit hanterar saknade värden lokalt i regressionen
              na.action = na.omit)
 
 glance(model2) %>% knitr::kable(digits = 3, caption = "Modell 2 - modellstatistik")
@@ -356,6 +379,7 @@ De linjära komponenterna av träningsnivå, försäkringsplan och kronisk sjukd
 
 cost_clean_pred <- cost_clean %>%
   filter(!is.na(bmi), !is.na(exercise_level), !is.na(chronic_condition)) %>%
+  # Beräknar modellens predikterade värden för varje kund
   mutate(predicted = predict(model2, .))
 
 ggplot(cost_clean_pred, aes(x = predicted, y = charges)) +

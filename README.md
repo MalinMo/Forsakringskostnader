@@ -18,4 +18,4 @@ install.packages("broom")
 Klicka på Knit i filen forsakringsanalys.Rmd i RStudio för att rendera dokumentet. En HTML-fil skapas automatiskt i samma mapp.
 
 **Rapport**  
-Rapport med de viktigaste delarna finns i filen rapport.Rmd som också körs med Knit.
+Rapport med de viktigaste delarna finns i filen rapport.Rmd som också körs med Knit. Rapporten finns även som pdf-fil.

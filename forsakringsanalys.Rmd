@@ -103,7 +103,7 @@ cost_clean <- cost_clean %>%
 
 ```
 
-### Kontrol av datatyper
+### Kontroll av datatyper
 
 ```{r}
 
@@ -365,7 +365,7 @@ tibble(
     summary(model1)$adj.r.squared,
     summary(model2)$adj.r.squared
   ),
-    residualstandardfel = c(
+    residual_se = c(
     summary(model1)$sigma,
     summary(model2)$sigma
   )
@@ -387,11 +387,15 @@ De linjära komponenterna av träningsnivå, försäkringsplan och kronisk sjukd
 cost_clean_pred <- cost_clean %>%
   filter(!is.na(bmi), !is.na(exercise_level), !is.na(chronic_condition)) %>%
   # Beräknar modellens predikterade värden för varje kund
-  mutate(predicted = predict(model2, .))
+  mutate(
+    fitted_value = fitted(model2),
+    residual = resid(model2)
+  )
 
-ggplot(cost_clean_pred, aes(x = predicted, y = charges)) +
+ggplot(cost_clean_pred, aes(x = fitted_value, y = charges)) +
   geom_point(alpha = 0.4) +
-  geom_abline(color = "red") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+  expand_limits(x = 0, y = 0) +
   labs(title = "Faktiska vs predikterade kostnader",
        x = "Predikterade kostnader",
        y = "Faktiska kostnader") +
@@ -407,9 +411,9 @@ Punkterna följer den röda linjen relativt väl, vilket indikerar att modellen 
 
 ```{r}
 
-ggplot(cost_clean_pred, aes(x = predicted, y = charges - predicted)) +
+ggplot(cost_clean_pred, aes(x = fitted_value, y = residual)) +
   geom_point(alpha = 0.4) +
-  geom_hline(yintercept = 0, color = "red") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
   labs(title = "Residualplot",
        x = "Predikterade kostnader",
        y = "Residualer") +
@@ -417,9 +421,57 @@ ggplot(cost_clean_pred, aes(x = predicted, y = charges - predicted)) +
 
 ```
 
-#### Tolkning residualplot (modell 2)
+### QQ-plot (modell 2)
+
+```{r}
+
+qqnorm(resid(model2))
+qqline(resid(model2), col = "red")
+
+```
+
+### Residualjämförelse modell 1 och modell 2
+
+```{r}
+
+model1_diagnostics <- cost_clean %>%
+  filter(!is.na(bmi)) %>%
+  mutate(
+    fitted_value = fitted(model1),
+    residual = resid(model1),
+    model = "Modell 1"
+  )
+
+model2_diagnostics <- cost_clean %>%
+  filter(!is.na(bmi), !is.na(exercise_level), !is.na(chronic_condition)) %>%
+  mutate(
+    fitted_value = fitted(model2),
+    residual = resid(model2),
+    model = "Modell 2"
+  )
+
+bind_rows(model1_diagnostics, model2_diagnostics) %>% 
+  ggplot(aes(x = fitted_value, y = residual)) +
+  geom_point(alpha = 0.4) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  facet_wrap(~model) +
+  labs(
+    title = "Residualer i modell 1 och modell 2",
+    x = "Predikterade kostnader",
+    y = "Residual"
+  )
+
+```
+
+#### Tolkning residualplot, QQ-plot och modelldiagnostik
 
 Residualerna är relativt jämnt fördelade runt nolllinjen, vilket tyder på att modellen inte systematiskt över- eller underskattar kostnaderna. Det finns dock några extrema outliers med mycket höga positiva residualer, vilket bekräftar att modellen underskattar kostnader för vissa kunder. Spridningen verkar också öka något vid högre predikterade värden, vilket är en av modellens begränsningar.
+
+QQ-plotten visar att residualerna följer normalfördelningen väl i mitten, men avviker i svansarna – särskilt i den övre svansen där några extrema värden sticker ut. Detta bekräftar att modellen har svårare att förutsäga de dyraste kunderna.
+
+Jämförelsen av residualer mellan modell 1 och modell 2 visar att modell 2 har något mindre spridning, vilket stämmer med det lägre residualstandardfelet i modelljämförelsetabellen.
+
+Modell 1 visar ett mönster med två separata punktmoln, vilket troligen beror på att rökning skapar två distinkta kostnadsnivåer som modellen inte fullt ut fångar med enbart de fem prediktorerna. Detta mönster är mindre uttalat i modell 2, vilket tyder på att de tillkommande variablerna bidrar till en bättre anpassning.
 
 ### Sammanfattning av regressionsanalysen
 

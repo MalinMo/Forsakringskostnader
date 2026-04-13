@@ -1,14 +1,14 @@
 ---
-title: "Försäkringskostnader"
+title: "Rapport försäkringskostnader"
 author: "Malin"
-date: "2026-04-01"
+date: "`r Sys.Date()`"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 
 options(width = 200)
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 Sys.setlocale("LC_ALL", "Swedish")
 
 ```
@@ -32,23 +32,6 @@ cost_raw <- read.csv("insurance_costs.csv")
 
 ```
 
-```{r}
-
-# Visar variabelnamn och datatyper som en formaterad tabell
-tibble(
-  variabel = names(cost_raw),
-  datatyp = sapply(cost_raw, class)
-)  %>%  knitr::kable()
-
-skim_without_charts(cost_raw)
-
-cost_raw %>% count(sex) %>% knitr::kable()
-cost_raw %>% count(smoker) %>% knitr::kable()
-
-```
-
-### Sammanfattning av dataförståelse
-
 Datasetet består av 1100 kunder med 14 variabler som beskriver demografiska egenskaper, livsstilsfaktorer och försäkringskostnader. Medelåldern är 42.5 år och medelkostnaden uppgår till cirka 10 060 kr med en stor spridning, vilket indikerar att kostnaderna inte är normalfördelade.
 
 Två variabler har saknade värden, bmi (28 observationer) och annual_checkups (20 observationer). Variabeln exercise_level har dessutom 22 tomma strängar som behöver konverteras till saknade värden.
@@ -58,8 +41,6 @@ Flera variabler lagras som text men är kategoriska till sin natur, exempelvis s
 Majoriteten av kunderna är icke-rökare och könsfördelningen är relativt jämn. Variablerna prior_accidents och prior_claims har medelvärden nära noll, vilket tyder på att skador och skadeanmälningar är ovanliga i kundstocken.
 
 ## 2. Datastädning och förberedelser
-
-### Datastädning
 
 ```{r}
 
@@ -88,8 +69,6 @@ cost_clean <- cost_raw %>%
 
 ```
 
-### BMI-kategorier
-
 ```{r}
 
 cost_clean <- cost_clean %>%
@@ -107,96 +86,16 @@ cost_clean <- cost_clean %>%
 
 ```
 
-### Kontroll av datatyper
-
-```{r}
-
-tibble(
-  variabel = names(cost_clean),
-  datatyp = sapply(cost_clean, class)
-) %>% knitr::kable()
-
-skim_without_charts(cost_clean)
-
-```
-
-### Sammanfattning av datastädning
-
 I datastädningen har inkonsekvent kapitalisering och eventuella blanksteg hanterats. Textvariabler har gjorts om till faktorer för att underlätta användningen i regressionsanalysen. Variablerna exercise_level och plan_type har dessutom gjorts om till ordnade faktorer. annual_checkups har gjorts om från decimaltal till heltal. Variabeln customer_id har tagits bort då den inte kommer användas i analysen.
 
 En ny variabel för BMI-kategorier har skapats baserad på WHOs definitioner för att göra det tydligare hur detta kopplar till hälsa. Ytterligare nya variabler som åldersgrupp och risknivå övervägdes men bedömdes inte tillföra något utöver de befintliga variablerna i analysen.
 
 ## 3. Beskrivande analys
 
-### Tabeller över fördelning av kategoriska variabler
+Könsfördelningen är jämn och regionsskillnaderna är små. Nedan visas de variabler som har tydligast samband med försäkringskostnaderna.
 
-```{r}
+### Kostnadsfördelning
 
-cost_clean %>% count(sex) %>% knitr::kable()
-cost_clean %>% count(smoker) %>% knitr::kable()
-cost_clean %>% count(exercise_level) %>% knitr::kable()
-cost_clean %>% count(bmi_category) %>% knitr::kable()
-
-```
-
-### Visualisering av fördelning av kategoriska variabler
-
-```{r, fig.width=10, fig.height=8}
-
-p1 <- ggplot(cost_clean, aes(x = sex)) +
-  geom_bar(fill = "blue") +
-  labs(title = "Kön", x = "Kön", y = "Antal")
-
-p2 <- ggplot(cost_clean, aes(x = smoker)) +
-  geom_bar(fill = "darkgreen") +
-  labs(title = "Rökare", x = "Rökare", y = "Antal")
-
-p3 <- cost_clean %>% 
-  filter(!is.na(exercise_level)) %>% 
-  ggplot(aes(x = exercise_level)) +
-  geom_bar(fill = "orange") +
-  labs(title = "Träningsnivå", x = "Träningsnivå", y = "Antal")
-
-p4 <- cost_clean %>% 
-  filter(!is.na(bmi_category)) %>% 
-  ggplot(aes(x = bmi_category)) +
-  geom_bar(fill = "purple") +
-  labs(title = "BMI-kategori", x = "BMI", y = "Antal")
-
-(p1 + p2) / (p3 + p4)
-
-```
-
-#### Tolkning fördelning av kategoriska variabler
-
-Könsfördelningen är jämn med 551 kvinnor och 549 män. Majoriteten av kunderna är icke-rökare (896 st) jämfört med rökare (204 st). Träningsnivån domineras av medium-nivå, medan high-nivå är minst vanlig. Flest kunder är överviktiga och det är något fler som har fetma än som är normalviktiga medan få är underviktiga.
-
-### Fördelning av kostnader
-
-```{r}
-
-sammanfatta_kostnader <- function(data, grupp, caption ="") {
-  data %>%
-    filter(!is.na({{grupp}})) %>%
-    group_by({{grupp}}) %>%
-    summarise(
-      medelvärde = mean(charges, na.rm = TRUE),
-      median = median(charges, na.rm = TRUE),
-      sd = sd(charges, na.rm = TRUE),
-      antal = n(),
-      .groups = "drop"
-    ) %>%
-    knitr::kable(digits = 0, caption = caption)
-}
-
-sammanfatta_kostnader(cost_clean, smoker, "Kostnader per rökarstatus")
-sammanfatta_kostnader(cost_clean, exercise_level, "Kostnader per träningsnivå")
-sammanfatta_kostnader(cost_clean, bmi_category, "Kostnader per BMI-kategori")
-```
-
-#### Tolkning av tabeller
-
-Rökare har betydligt högre genomsnittliga kostnader än icke-rökare, vilket tyder på att rökning är en stark kostnadsdrivare. Träningsnivå visar ett svagare mönster, där låg träning har något högre kostnader än hög träning. BMI-kategorierna visar att fetma och övervikt är förknippade med högre kostnader jämfört med normalvikt.
 
 ```{r, fig.width=12, fig.height=4}
 
@@ -216,36 +115,18 @@ pc1 + pc2
 
 ```
 
-#### Tolkning av histogram
+#### Tolkning av kostnadsfördelning
 
 Kostnadsfördelningen är högersnedad med de flesta kunder i intervallet 5 000–15 000 kr. Zoom-grafen visar att ett fåtal kunder har mycket höga kostnader över 25 000 kr, vilket kan påverka modellens precision.
 
 
-### Kostnader vs rökning och träningsnivå
+### Kostnader vs rökning och ålder
 
 ```{r, fig.width=12, fig.height=4}
 
 psmo <- ggplot(cost_clean, aes(y = charges, x = smoker, fill = smoker)) +
   geom_boxplot() +
   labs(title = "Kostnader vs rökare och ickerökare")
-
-pfit <- cost_clean %>% 
-  filter(!is.na(exercise_level)) %>% 
-  ggplot(aes(y = charges, x = exercise_level, fill = exercise_level)) +
-  geom_boxplot() +
-  labs(title = "Kostnader vs träningsnivå")
-
-psmo + pfit
-
-```
-
-#### Tolkning kostnader vs rökning och träningsnivå 
-
-Rökare har tydligt högre kostnader med en median runt 16 000 kr jämfört med cirka 8 000 kr för icke-rökare. Träningsnivå visar ett svagare samband där skillnaderna mellan grupperna är mindre uttalade.
-
-### Kostnader vs ålder och BMI
-
-```{r, fig.width=12, fig.height=4}
 
 page <- ggplot(cost_clean, aes(y = charges, x = age, color = smoker)) +
   # Jitter sprider punkter som ligger på varandra
@@ -255,70 +136,17 @@ page <- ggplot(cost_clean, aes(y = charges, x = age, color = smoker)) +
   scale_color_manual(values = c("no" = "darkblue", "yes" = "darkred")) +
   labs(title = "Kostnader vs ålder")
 
-pbmi <- cost_clean %>% 
-  filter(!is.na(bmi), !is.na(exercise_level)) %>%
-  ggplot(aes(y = charges, x = bmi, color = exercise_level)) +
-  # Jitter sprider punkter som ligger på varandra
-  geom_point(alpha = 0.5, position = "jitter") +
-  # geom_smooth lägger till en linjär trendlinje
-  geom_smooth(method = "lm", se = TRUE) +
-  scale_color_manual(values = c("low" = "purple", "medium" = "orange", "high" = "darkgreen")) +
-  labs(title = "Kostnader vs BMI")
-
-page + pbmi
+psmo + page
 
 ```
 
-#### Tolkning kostnader vs ålder och BMI
+#### Tolkning kostnader vs rökning och ålder
 
-Det finns ett positivt samband mellan ålder och kostnader, där äldre kunder tenderar att ha högre kostnader. Rökare (röda punkter) ligger genomgående högre än icke-rökare oavsett ålder. BMI-grafen visar inget lika tydligt mönster med träningsnivå.
+Rökare har tydligt högre kostnader med en median runt 16 000 kr jämfört med cirka 8 000 kr för icke-rökare.
 
-### Skillnader mellan grupper
+Det finns ett positivt samband mellan ålder och kostnader, där äldre kunder tenderar att ha högre kostnader. Rökare (röda punkter) ligger genomgående högre än icke-rökare oavsett ålder.
 
-```{r, fig.width=12, fig.height=4}
-
-psex <- ggplot(cost_clean, aes(y = charges, x = sex, fill = sex)) +
-  geom_boxplot() +
-  labs(title = "Kostnader vs kön")
-
-preg <- ggplot(cost_clean, aes(y = charges, x = region, fill = region)) +
-  geom_boxplot() +
-  labs(title = "Kostnader vs region")
-
-ppla <- ggplot(cost_clean, aes(y = charges, x = plan_type, fill = plan_type)) +
-  geom_boxplot() +
-  labs(title = "Kostnader vs försäkringsplan")
-
-psex + preg + ppla
-
-```
-
-#### Tolkning skillnader mellan grupper
-
-Köns- och regionsskillnaderna är små och troligen inte statistiskt betydelsefulla. Försäkringsplanen visar däremot ett tydligare mönster där premium-kunder har högre kostnader än basic-kunder, vilket kan bero på att premium-planer attraherar kunder med högre vårdbehov.
-
-### Korrelation med försäkringskostnader
-
-```{r}
-
-cost_clean %>% 
-  summarise(
-    cor_age = cor(charges, age, use = "complete.obs"),
-    cor_bmi = cor(charges, bmi, use = "complete.obs"),
-    cor_children = cor(charges, children, use = "complete.obs"),
-    cor_prior_accidents = cor(charges, prior_accidents, use = "complete.obs"),
-    cor_prior_claims = cor(charges, prior_claims, use = "complete.obs"),
-    cor_annual_checkups = cor(charges, annual_checkups, use = "complete.obs")
-  ) %>%
-  knitr::kable(digits = 2, caption = "Korrelation med försäkringskostnader")
-
-```
-
-#### Tolkning korrelation med försäkringskostnader
-
-Korrelationsanalysen visar att ingen enskild numerisk variabel har ett starkt linjärt samband med försäkringskostnaderna. Ålder (0.26) och tidigare olyckor (0.24) har de starkaste sambanden, följt av tidigare skadeanmälningar (0.18) och BMI (0.15). Antal barn (0.03) och årliga hälsokontroller (0.06) visar mycket svaga samband med kostnaderna.
-
-Det är värt att notera att rökning, som visade den tydligaste skillnaden i den beskrivande analysen, är en kategorisk variabel och ingår därför inte i korrelationstabellen. Det svaga linjära sambandet för de numeriska variablerna antyder att kostnaderna påverkas mer av kategoriska faktorer som rökning och försäkringsplan än av de numeriska variablerna.
+Trendlinjerna visar att kostnader ökar med ålder för båda grupperna, men rökare har genomgående högre kostnader oavsett ålder.
 
 ## 4. Regressionsanalys
 
@@ -328,8 +156,6 @@ Kön och region utesluts då boxplotanalysen visade minimala skillnader mellan g
 
 ### Modelljämförelse
 
-#### Modell 1
-
 ```{r}
 
 model1 <- lm(charges ~ smoker + age + prior_accidents + prior_claims + bmi,
@@ -337,13 +163,7 @@ model1 <- lm(charges ~ smoker + age + prior_accidents + prior_claims + bmi,
              # na.omit hanterar saknade värden lokalt i regressionen
              na.action = na.omit)
 
-# glance och tidy från broom ger snyggare tabeller än summary
-glance(model1) %>% knitr::kable(digits = 3, caption = "Modell 1 - modellstatistik")
-tidy(model1) %>% knitr::kable(digits = 3, caption = "Modell 1")
-
 ```
-
-#### Modell 2 - utökad
 
 ```{r}
 
@@ -351,10 +171,6 @@ model2 <- lm(charges ~ smoker + age + prior_accidents + prior_claims + bmi + exe
              data = cost_clean,
              # na.omit hanterar saknade värden lokalt i regressionen
              na.action = na.omit)
-
-# glance och tidy från broom ger snyggare tabeller än summary
-glance(model2) %>% knitr::kable(digits = 3, caption = "Modell 2 - modellstatistik")
-tidy(model2) %>% knitr::kable(digits = 3, caption = "Modell 2")
 
 ```
 
@@ -412,72 +228,6 @@ ggplot(cost_clean_pred, aes(x = fitted_value, y = charges)) +
 
 Punkterna följer den röda linjen relativt väl, vilket indikerar att modellen har god anpassning. Den röda linjen representerar perfekt anpassning, dvs. där faktiska och predikterade kostnader är lika. Vid höga predikterade värden ökar spridningen något, vilket tyder på att modellen är något sämre på att förutsäga kostnader för de dyraste kunderna.
 
-### Residualplot (modell 2)
-
-```{r}
-
-ggplot(cost_clean_pred, aes(x = fitted_value, y = residual)) +
-  geom_point(alpha = 0.4) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-  labs(title = "Residualplot",
-       x = "Predikterade kostnader",
-       y = "Residualer") +
-  theme_minimal()
-
-```
-
-### QQ-plot (modell 2)
-
-```{r}
-
-qqnorm(resid(model2))
-qqline(resid(model2), col = "red")
-
-```
-
-### Residualjämförelse modell 1 och modell 2
-
-```{r}
-
-model1_diagnostics <- cost_clean %>%
-  filter(!is.na(bmi)) %>%
-  mutate(
-    fitted_value = fitted(model1),
-    residual = resid(model1),
-    model = "Modell 1"
-  )
-
-model2_diagnostics <- cost_clean %>%
-  filter(!is.na(bmi), !is.na(exercise_level)) %>%
-  mutate(
-    fitted_value = fitted(model2),
-    residual = resid(model2),
-    model = "Modell 2"
-  )
-
-bind_rows(model1_diagnostics, model2_diagnostics) %>% 
-  ggplot(aes(x = fitted_value, y = residual)) +
-  geom_point(alpha = 0.4) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-  facet_wrap(~model) +
-  labs(
-    title = "Residualer i modell 1 och modell 2",
-    x = "Predikterade kostnader",
-    y = "Residual"
-  )
-
-```
-
-#### Tolkning residualplot, QQ-plot och residualjämförelse modell 1 och modell 2
-
-Residualerna är relativt jämnt fördelade runt nolllinjen, vilket tyder på att modellen inte systematiskt över- eller underskattar kostnaderna. Det finns dock några extrema outliers med mycket höga positiva residualer, vilket bekräftar att modellen underskattar kostnader för vissa kunder. Spridningen verkar också öka något vid högre predikterade värden, vilket är en av modellens begränsningar.
-
-QQ-plotten visar att residualerna följer normalfördelningen väl i mitten, men avviker i svansarna – särskilt i den övre svansen där några extrema värden sticker ut. Detta bekräftar att modellen har svårare att förutsäga de dyraste kunderna.
-
-Jämförelsen av residualer mellan modell 1 och modell 2 visar att modell 2 har något mindre spridning, vilket stämmer med det lägre residualstandardfelet i modelljämförelsetabellen.
-
-Modell 1 visar ett mönster med två separata punktmoln, vilket troligen beror på att rökning skapar två distinkta kostnadsnivåer som modellen inte fullt ut fångar med enbart de fem prediktorerna. Detta mönster är mindre uttalat i modell 2, vilket tyder på att de tillkommande variablerna bidrar till en bättre anpassning.
-
 ### Sammanfattning av regressionsanalysen
 
 Rökning är den starkaste prediktorn – rökare har i genomsnitt 7 467 kr högre kostnader än icke-rökare. Kronisk sjukdom är den näst starkaste faktorn med 3 780 kr högre kostnader. Högre träningsnivå är associerat med lägre kostnader och högre försäkringsplan med högre kostnader. Ålder, BMI, tidigare olyckor och skadeanmälningar bidrar alla signifikant men med mindre effekter.
@@ -489,7 +239,7 @@ Det är värt att notera att koefficienten för tidigare skadeanmälningar sjunk
 - Resultaten följer rimliga mönster – faktorer som rökning och kronisk sjukdom driver kostnader uppåt, vilket stämmer med vad man kan förvänta sig  
 - Modellen kan användas som beslutsstöd vid framtida prissättning av liknande kunder  
 
-**Svagheter och begränsningar:**     
+**Svagheter och begränsningar:**    
 - 49 observationer togs bort på grund av saknade värden  
 - Multikollinearitet mellan prediktorerna har inte undersökts  
 - Modellen fångar endast linjära samband  

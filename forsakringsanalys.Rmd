@@ -5,14 +5,6 @@ date: "2026-04-01"
 output: html_document
 ---
 
-# Försäkringsanalys
-
-Syftet med denna analys är att undersöka vilka faktorer som påverkar försäkringskostnaderna mest. Datasetet innehåller information om kunder, livsstilsfaktorer och hälsorelaterade variabler, och analysen fokuserar på att identifiera mönster och samband i datan.
-
-Rapporten inleds med en beskrivande analys för att få en överblick över datan, följt av en regressionsanalys för att undersöka vilka variabler som bäst förklarar kostnadsskillnaderna mellan kunder. Målet är att ge ett underlag för framtida prissättning.
-
-## 1. Dataförståelse
-
 ```{r setup, include=FALSE}
 
 options(width = 200)
@@ -20,6 +12,14 @@ knitr::opts_chunk$set(echo = TRUE)
 Sys.setlocale("LC_ALL", "Swedish")
 
 ```
+
+# Försäkringsanalys
+
+Syftet med denna analys är att undersöka vilka faktorer som påverkar försäkringskostnaderna mest. Datasetet innehåller information om kunder, livsstilsfaktorer och hälsorelaterade variabler, och analysen fokuserar på att identifiera mönster och samband i datan.
+
+Rapporten inleds med en beskrivande analys för att få en överblick över datan, följt av en regressionsanalys för att undersöka vilka variabler som bäst förklarar kostnadsskillnaderna mellan kunder. Målet är att ge ett underlag för framtida prissättning.
+
+## 1. Dataförståelse
 
 ```{r}
 
@@ -29,6 +29,10 @@ library(patchwork)  # Kombinerar flera grafer
 library(broom)      # Snyggare tabeller från regressionsmodellerna
 
 cost_raw <- read.csv("insurance_costs.csv")
+
+```
+
+```{r}
 
 # Visar variabelnamn och datatyper som en formaterad tabell
 tibble(
@@ -43,7 +47,7 @@ cost_raw %>% count(smoker) %>% knitr::kable()
 
 ```
 
-### Samanfattning av dataförståelse
+### Sammanfattning av dataförståelse
 
 Datasetet består av 1100 kunder med 14 variabler som beskriver demografiska egenskaper, livsstilsfaktorer och försäkringskostnader. Medelåldern är 42.5 år och medelkostnaden uppgår till cirka 10 060 kr med en stor spridning, vilket indikerar att kostnaderna inte är normalfördelade.
 
@@ -118,9 +122,9 @@ skim_without_charts(cost_clean)
 
 ### Sammanfattning av datastädning
 
-I datastädningen har inkonsekvent kapitalisering och eventuella blanksteg hanterats. Textvariabler har gjorts om till faktorer för att underlätta användningen i regressionsanalysen. Variablerna exercies_level och plan_type har dessutom gjort om till ordnade faktorer. annual_checkups har gjorts om från decimaltal till heltal. Variabeln customer_id har tagits bort då den inte kommer användas i analysen.
+I datastädningen har inkonsekvent kapitalisering och eventuella blanksteg hanterats. Textvariabler har gjorts om till faktorer för att underlätta användningen i regressionsanalysen. Variablerna exercise_level och plan_type har dessutom gjorts om till ordnade faktorer. annual_checkups har gjorts om från decimaltal till heltal. Variabeln customer_id har tagits bort då den inte kommer användas i analysen.
 
-En ny variabel för BMI-kategorier har skapats baserad på WHOs definitioner för att göra det tydligare hur detta kopplar till hälsa.Ytterligare nya variabler som åldersgrupp och risknivå övervägdes men bedömdes inte tillföra något utöver de befintliga variablerna i analysen.
+En ny variabel för BMI-kategorier har skapats baserad på WHOs definitioner för att göra det tydligare hur detta kopplar till hälsa. Ytterligare nya variabler som åldersgrupp och risknivå övervägdes men bedömdes inte tillföra något utöver de befintliga variablerna i analysen.
 
 ## 3. Beskrivande analys
 
@@ -171,7 +175,7 @@ Könsfördelningen är jämn med 551 kvinnor och 549 män. Majoriteten av kunder
 
 ```{r}
 
-sammanfatta_kostnader <- function(data, grupp) {
+sammanfatta_kostnader <- function(data, grupp, caption ="") {
   data %>%
     filter(!is.na({{grupp}})) %>%
     group_by({{grupp}}) %>%
@@ -182,14 +186,17 @@ sammanfatta_kostnader <- function(data, grupp) {
       antal = n(),
       .groups = "drop"
     ) %>%
-    knitr::kable(digits = 0)
+    knitr::kable(digits = 0, caption = caption)
 }
 
-sammanfatta_kostnader(cost_clean, smoker)
-sammanfatta_kostnader(cost_clean, exercise_level)
-sammanfatta_kostnader(cost_clean, bmi_category)
-
+sammanfatta_kostnader(cost_clean, smoker, "Kostnader per rökarstatus")
+sammanfatta_kostnader(cost_clean, exercise_level, "Kostnader per träningsnivå")
+sammanfatta_kostnader(cost_clean, bmi_category, "Kostnader per BMI-kategori")
 ```
+
+#### Tolkning av tabeller
+
+Rökare har betydligt högre genomsnittliga kostnader än icke-rökare, vilket tyder på att rökning är en stark kostnadsdrivare. Träningsnivå visar ett svagare mönster, där låg träning har något högre kostnader än hög träning. BMI-kategorierna visar att fetma och övervikt är förknippade med högre kostnader jämfört med normalvikt.
 
 ```{r, fig.width=12, fig.height=4}
 
@@ -209,9 +216,7 @@ pc1 + pc2
 
 ```
 
-#### Tolkning av kostnadsfördelning
-
-Rökare har betydligt högre genomsnittliga kostnader än icke-rökare, vilket tyder på att rökning är en stark kostnadsdrivare. Träningsnivå visar ett svagare mönster, där låg träning har något högre kostnader än hög träning. BMI-kategorierna visar att fetma och övervikt är förknippade med högre kostnader jämfört med normalvikt.
+#### Tolkning av histogram
 
 Kostnadsfördelningen är högersnedad med de flesta kunder i intervallet 5 000–15 000 kr. Zoom-grafen visar att ett fåtal kunder har mycket höga kostnader över 25 000 kr, vilket kan påverka modellens precision.
 
@@ -264,7 +269,7 @@ page + pbmi
 
 ```
 
-#### Tolkning kostander vs ålder och BMI
+#### Tolkning kostnader vs ålder och BMI
 
 Det finns ett positivt samband mellan ålder och kostnader, där äldre kunder tenderar att ha högre kostnader. Rökare (röda punkter) ligger genomgående högre än icke-rökare oavsett ålder. BMI-grafen visar inget lika tydligt mönster med träningsnivå.
 
@@ -385,7 +390,7 @@ De linjära komponenterna av träningsnivå, försäkringsplan och kronisk sjukd
 ```{r}
 
 cost_clean_pred <- cost_clean %>%
-  filter(!is.na(bmi), !is.na(exercise_level), !is.na(chronic_condition)) %>%
+  filter(!is.na(bmi), !is.na(exercise_level)) %>%
   # Beräknar modellens predikterade värden för varje kund
   mutate(
     fitted_value = fitted(model2),
@@ -443,7 +448,7 @@ model1_diagnostics <- cost_clean %>%
   )
 
 model2_diagnostics <- cost_clean %>%
-  filter(!is.na(bmi), !is.na(exercise_level), !is.na(chronic_condition)) %>%
+  filter(!is.na(bmi), !is.na(exercise_level)) %>%
   mutate(
     fitted_value = fitted(model2),
     residual = resid(model2),
@@ -463,7 +468,7 @@ bind_rows(model1_diagnostics, model2_diagnostics) %>%
 
 ```
 
-#### Tolkning residualplot, QQ-plot och modelldiagnostik
+#### Tolkning residualplot, QQ-plot och residualjämförelse modell 1 och modell 2
 
 Residualerna är relativt jämnt fördelade runt nolllinjen, vilket tyder på att modellen inte systematiskt över- eller underskattar kostnaderna. Det finns dock några extrema outliers med mycket höga positiva residualer, vilket bekräftar att modellen underskattar kostnader för vissa kunder. Spridningen verkar också öka något vid högre predikterade värden, vilket är en av modellens begränsningar.
 
@@ -490,16 +495,20 @@ Det är värt att notera att koefficienten för tidigare skadeanmälningar sjunk
 - Modellen fångar endast linjära samband
 - Datasetet saknar variabler som rökarhistorik och socioekonomisk status
 
-En möjlig förbättring av modellen vore att undersöka interaktionseffekter, t.ex. mellan BMI och träningsnivå, då trendlinjerna i figur "Kostnader vs BMI antyder att BMI påverkar kostnader olika beroende på träningsnivå.
-
-```{r}
-
-```
+En möjlig förbättring av modellen vore att undersöka interaktionseffekter, t.ex. mellan BMI och träningsnivå, då trendlinjerna i figuren "Kostnader vs BMI" antyder att BMI påverkar kostnader olika beroende på träningsnivå.
 
 ## 5. Slutsatser
 
-Analysen visar att rökning och kronisk sjukdom är de faktorer som tydligast driver försäkringskostnaderna, följt av ålder, BMI och tidigare skadehistorik. Regressionsmodellen förklarar 75% av variationen i kostnaderna och bedöms kunna användas som beslutsstöd vid framtida prissättning.
+Analysen visar att rökning och kronisk sjukdom är de faktorer som tydligast driver försäkringskostnaderna, följt av ålder, BMI och tidigare tidigare olyckor och skadeanmälningar. Regressionsmodellen förklarar 75% av variationen i kostnaderna och bedöms kunna användas som beslutsstöd vid framtida prissättning.
 
 Modellen fångar dock inte icke-linjära samband eller interaktionseffekter mellan variabler. Datasetet saknar också information som rökarhistorik och socioekonomisk status, vilket troligen påverkar kostnaderna i verkligheten.
 
 Möjliga förbättringar inkluderar att undersöka interaktionseffekter, hantera de saknade värdena mer systematiskt samt komplettera datasetet med fler relevanta variabler.
+
+## 6. Självreflektion
+
+En styrka i arbetet är att datastädningen är noggrann och välmotiverad, och att valet av prediktorer baseras på både visualiseringar och korrelationsanalys. Regressionsanalysen innehåller två modeller med fullständig diagnostik och kritisk diskussion.
+
+Det mest utmanande momentet var att tolka koefficienterna för de ordnade faktorerna och förstå hur förklaringskraften förändrades mellan modellerna där särskilt koefficienten för prior_claims skiljde sig mycket mellan modellerna.
+
+Arbetet uppfyller enligt min bedömning kraven för VG, eftersom det inkluderar modeljämförelse, residualdiagnostik samt kritiskt resonemang kring modellens styrkor, begränsningar och möjliga förbättringar.

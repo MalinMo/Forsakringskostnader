@@ -383,7 +383,7 @@ tibble(
 
 Modell 2 är mer lämplig än modell 1. R² ökar från 0.587 till 0.749, vilket innebär att den utökade modellen förklarar ytterligare 16 procentenheter av variationen i försäkringskostnaderna. Residualstandardfelet minskar från 2 945 till 2 306, vilket innebär att modellens genomsnittliga fel minskar med cirka 640 kr per kund. 
 
-De linjära komponenterna av träningsnivå, försäkringsplan och kronisk sjukdom är statistiskt signifikanta, vilket bekräftar att det var motiverat att inkludera dem i modell 2. De kvadratiska komponenterna av de ordnande variablerna (exercise_level.Q och plan_type.Q) är däremot inte signifikanta, vilket tyder på att sambanden är linjära snarare än böjda.
+De linjära komponenterna av träningsnivå, försäkringsplan och kronisk sjukdom är statistiskt signifikanta, vilket bekräftar att det var motiverat att inkludera dem i modell 2. De kvadratiska komponenterna av de ordnande variablerna (exercise_level.Q och plan_type.Q) är däremot inte signifikanta, vilket tyder på att sambanden är linjära snarare än böjda, vilket är förväntat för dessa variabler.
 
 ### Faktiska vs predikterade kostnader (modell 2)
 
@@ -480,7 +480,7 @@ Modell 1 visar ett mönster med två separata punktmoln, vilket troligen beror p
 
 ### Sammanfattning av regressionsanalysen
 
-Rökning är den starkaste prediktorn – rökare har i genomsnitt 7 467 kr högre kostnader än icke-rökare. Kronisk sjukdom är den näst starkaste faktorn med 3 780 kr högre kostnader. Högre träningsnivå är associerat med lägre kostnader och högre försäkringsplan med högre kostnader. Ålder, BMI, tidigare olyckor och skadeanmälningar bidrar alla signifikant men med mindre effekter.
+Rökning är den starkaste prediktorn – rökare har i genomsnitt 7 467 kr högre kostnader än icke-rökare. Kronisk sjukdom är den näst starkaste faktorn med 3 780 kr högre kostnader. Högre träningsnivå är associerat med lägre kostnader (-1 020 kr) och högre försäkringsplan med högre kostnader. Ålder, BMI, tidigare olyckor och skadeanmälningar bidrar alla signifikant men med mindre effekter.
 
 Det är värt att notera att koefficienten för tidigare skadeanmälningar sjunker från 1 317 i modell 1 till 902 i modell 2, vilket tyder på att en del av effekten i modell 1 egentligen förklaras av träningsnivå, försäkringsplan och kronisk sjukdom.
 
